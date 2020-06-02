@@ -1,4 +1,4 @@
-#This code is for configuring and Simulating Ex-Alta 2's S-Band Transmitter
+# This Code is for Configuring and Simulating Ex-Alta 2's S-Band Transmitter
 sTransmitter.c contains functions to access s-band transmitter functionality. These read and/or write each register outlined in the HSTXC-01-00090 User Manual.
 These functions should be used in other code as needed to configure and get housekeeping 
 data from the S-Band transmitter. Since we don't have the actual hardware, i2c and spi communication has 

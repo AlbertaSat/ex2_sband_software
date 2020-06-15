@@ -1,9 +1,24 @@
-// test_sTransmitter.c
-// Author: Thomas Ganley
-// May 13, 2020
+/*
+ * Copyright (C) 2015  University of Alberta
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+/**
+ * @file test_sTransmitter.c
+ * @author Thomas Ganley
+ * @date 2020-05-13
+ */
 
 #include "unity.h"
-
 #include "sTransmitter.h"
 #include "mock_i2c.h"
 #include "mock_spi.h"
@@ -150,17 +165,17 @@ void test_bufferUnderrun()
 
 void test_housekeeping()
 {
-	float sHouse[8] = {0};
-	if(get_S_hk(sHouse) == FUNC_PASS){
-		TEST_ASSERT_FLOAT_WITHIN(0.05, 2.34, sHouse[0]);
-		TEST_ASSERT_FLOAT_WITHIN(0.05, 100.6, sHouse[1]);
-		TEST_ASSERT_FLOAT_WITHIN(0.05, 50, sHouse[2]);
-		TEST_ASSERT_FLOAT_WITHIN(0.05, -0.25, sHouse[3]);
-		TEST_ASSERT_FLOAT_WITHIN(0.005, 0.08224, sHouse[4]);
-		TEST_ASSERT_FLOAT_WITHIN(0.005, 16.448, sHouse[5]);
-		TEST_ASSERT_FLOAT_WITHIN(0.005, -0.6528, sHouse[6]);
-		TEST_ASSERT_FLOAT_WITHIN(0.005, 0.036, sHouse[7]);
-	}else{
-		TEST_FAIL();
-	}
+  sBand_housekeeping hkStruct;
+  if (get_S_hk(&hkStruct) == FUNC_PASS) {
+    TEST_ASSERT_FLOAT_WITHIN(0.05, 2.34, hkStruct.outputPower);
+    TEST_ASSERT_FLOAT_WITHIN(0.05, 100.6, hkStruct.paTemp);
+    TEST_ASSERT_FLOAT_WITHIN(0.05, 50, hkStruct.topTemp);
+    TEST_ASSERT_FLOAT_WITHIN(0.05, -0.25, hkStruct.bottomTemp);
+    TEST_ASSERT_FLOAT_WITHIN(0.005, 0.08224, hkStruct.batCurrent);
+    TEST_ASSERT_FLOAT_WITHIN(0.005, 16.448, hkStruct.batVoltage);
+    TEST_ASSERT_FLOAT_WITHIN(0.005, -0.6528, hkStruct.paCurrent);
+    TEST_ASSERT_FLOAT_WITHIN(0.005, 0.036, hkStruct.paVoltage);
+  } else {
+    TEST_FAIL();
+  }
 }

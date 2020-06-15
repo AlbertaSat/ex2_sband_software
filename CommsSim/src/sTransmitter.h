@@ -1,6 +1,22 @@
-// sTransmitter.h
-// Author: Thomas Ganley
-// May 13, 2020
+/*
+ * Copyright (C) 2015  University of Alberta
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+/**
+ * @file sTransmitter.h
+ * @author Thomas Ganley
+ * @date 2020-05-13
+ */
 
 #ifndef STRANSMITTER_H
 #define STRANSMITTER_H
@@ -14,6 +30,17 @@ typedef enum{
 	BAD_WRITE  = 1,
 	BAD_PARAM  = 2,
 }ret_state;
+
+typedef struct {
+  float outputPower;
+  float paTemp;
+  float topTemp;
+  float bottomTemp;
+  float batCurrent;
+  float batVoltage;
+  float paCurrent;
+  float paVoltage;
+} sBand_housekeeping;
 
 //* Simulated buffer functions
 ret_state add_vBuffer(int);
@@ -56,6 +83,6 @@ ret_state get_S_TR(int * transmit);
 
 ret_state get_S_buffer(int quantity, uint16_t * ptr);
 
-ret_state get_S_hk(float * arr);
+ret_state get_S_hk(sBand_housekeeping *hk);
 
 #endif /* STRANSMITTER_H */

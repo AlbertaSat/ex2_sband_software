@@ -1,7 +1,22 @@
-// sTransmitter.c
-// Author: Thomas Ganley
-// May 13, 2020
-// "*" indicates code that should be removed once i2c & spi are implemented with the actual hardware
+/*
+ * Copyright (C) 2015  University of Alberta
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+/**
+ * @file sTransmitter.c
+ * @author Thomas Ganley
+ * @date 2020-05-13
+ */
 
 #include "sTransmitter.h"
 #include "mock_i2c.h" //*
@@ -18,7 +33,19 @@ static uint8_t reg29 = 8, reg30 = 50, reg31 = 0, reg32 = 255;
 static uint8_t reg33 = 192, reg34 = 8, reg35 = 8, reg36 = 16;
 static uint8_t reg37 = 16, reg38 = 192, reg39 = 64, reg40 = 0, reg41 = 9;
 
-//* Simulated buffer function for adding 
+/**
+ * @brief
+ * 		Adds to the virtual Buffer
+ * @details
+ * 		Does not store any data and should be replaced with spi function
+ *eventually
+ * @attention
+ *		Will not exist eventually
+ * @param n_bytes
+ * 		The number of bytes to add to the buffer
+ * @return ret_state
+ * 		Success of the function defined in sTransmitter.h
+ */
 ret_state add_vBuffer(int n_bytes)// Replace with spi_writeData eventually
 {
 	spi_writeData_Expect();
@@ -57,6 +84,19 @@ ret_state add_vBuffer(int n_bytes)// Replace with spi_writeData eventually
 	return FUNC_PASS;
 }
 
+/**
+ * @brief
+ *              "Transmits" bytes = removes from the virtual Buffer
+ * @details
+ *              Does not delete any data
+ * @attention
+ *              Will not exist eventually. No such function will be needed since
+ * data is removed through transmission
+ * @param n_bytes
+ *              The number of bytes to remove from the buffer
+ * @return ret_state
+ *              Success of the function defined in sTransmitter.h
+ */
 ret_state transmit_vBuffer(int n_bytes) // No such function will actually need to be called
 {	
 	for(int k = 0; k < n_bytes; k++){
@@ -90,13 +130,36 @@ ret_state transmit_vBuffer(int n_bytes) // No such function will actually need t
 	}
 	return FUNC_PASS;
 }
+
+/**
+ * @brief
+ *              Empties the virtual Buffer
+ * @details
+ *              Resets simulated registers to 0
+ * @attention
+ *              Will not exist eventually
+ *
+ */
 void empty_vBuffer(void)
 {
 	reg25 = 0;
 	reg24 = 0;
 }
 
-//* Function to read a register, called in other functions (replace with i2c_readRegister eventually)
+/**
+ * @brief
+ *              Function to read a simulated register
+ * @details
+ *              Called in other functions (replace with i2c function eventually)
+ * @attention
+ *              Will not exist eventually
+ * @param address
+ *              Register address as defined in the HSTXC User Manual
+ * @param ptr
+ * 		Pointer to where the register's value should be stored
+ * @return ret_state
+ *              Success of the function defined in sTransmitter.h
+ */
 ret_state read_reg(uint8_t address, uint8_t * ptr)
 {
 	uint8_t exp = 0x0; //*
@@ -139,7 +202,21 @@ ret_state read_reg(uint8_t address, uint8_t * ptr)
 	resetTest(); //* Clears ExpectAndReturn memory
 	return FUNC_PASS;
 }
-// Function to write to a register, called in other functions
+
+/**
+ * @brief
+ *              Function to write to a simulated register
+ * @details
+ *              Called in other functions (replace with i2c function eventually)
+ * @attention
+ *              Will not exist eventually
+ * @param address
+ *              Register address as defined in the HSTXC User Manual
+ * @param ptr
+ *              Pointer to the write value
+ * @return ret_state
+ *              Success of the function defined in sTransmitter.h
+ */
 ret_state write_reg(uint8_t address, uint8_t val)
 {
 	i2c_writeRegister_Expect(address, val); //*
@@ -180,14 +257,40 @@ ret_state write_reg(uint8_t address, uint8_t val)
 	}
 	return FUNC_PASS;
 }
-// Function to combine readings from two registers 
+
+/**
+ * @brief
+ *              Function to combine readings from two registers
+ * @details
+ *              Called in set/get functions. Some values are stored in "16 bit
+ * registers" using two 8-bit registers
+ * @param b1
+ *              Most significant byte of desired 16 bit value
+ * @param b2
+ *              Least significant byte of desired 16 bit value
+ * @return uint16_t
+ *              Returns appended value
+ */
 uint16_t append_bytes(uint8_t b1, uint8_t b2)
 {
 	uint16_t b = (b1 << 8) | b2;
 	return b;
 }
 
-// Calculates the board temperature (called in get_S_hk)
+/**
+ * @brief
+ *              Function to combine readings from two temperature sensor
+ * registers
+ * @details
+ *              Called in temperature get functions. Some values are stored in
+ * "16 bit registers" using two 8-bit registers
+ * @param b1
+ *              Most significant byte of desired 16 bit value
+ * @param b2
+ *              Least significant byte of desired 16 bit value
+ * @return float
+ *              Returns temperature in degrees Celsius
+ */
 float b_Temp(uint16_t b)
 {
 	float temperature = 0;
@@ -200,8 +303,19 @@ float b_Temp(uint16_t b)
 	return temperature;
 }
 
-// REGISTER 0x00:
-// Get the value of the control register
+/**
+ * @brief
+ *              Register 0x00: Get the power amplifier and mode values
+ * @param pa
+ *              Where the read value for the power amplifier will be stored
+ *              (1 = enabled, 0 = disabled)
+ * @param mode
+ *              Where the read value for the mode will be stored
+ *              (0 = Configuration, 1 = Synchronization, 2 = Data, 3 = Test
+ * data)
+ * @return ret_state
+ *              Success of the function defined in sTransmitter.h
+ */
 ret_state get_S_control(uint8_t * pa, uint8_t * mode)
 {
 	uint8_t rawValue = 0;
@@ -214,7 +328,19 @@ ret_state get_S_control(uint8_t * pa, uint8_t * mode)
 	}
 }
 
-// Set a new control on the transmitter
+/**
+ * @brief
+ *              Register 0x00: Set the power amplifier and mode values
+ * @param new_pa
+ *              PA write value
+ *              (1 = enabled, 0 = disabled)
+ * @param new_mode
+ *              Mode write value
+ *              (0 = Configuration, 1 = Synchronization, 2 = Data, 3 = Test
+ * data)
+ * @return ret_state
+ *              Success of the function defined in sTransmitter.h
+ */
 ret_state set_S_control(uint8_t new_pa, uint8_t new_mode)
 {
 	
@@ -231,8 +357,25 @@ ret_state set_S_control(uint8_t new_pa, uint8_t new_mode)
 	}
 }
 
-// REGISTER 0x01:
-// Get the value of the encoder register
+/**
+ * @brief
+ *              Register 0x01: Get the scrambler, filter, modulation, and rate
+ * values
+ * @param scrambler
+ *              Where the read value for the scrambler will be stored
+ *              (0 = enabled, 1 = disabled)
+ * @param filter
+ *              Where the read value for the filter will be stored
+ *              (0 = enabled, 1 = disabled)
+ * @param mod
+ * 		Where the read value for the modulation scheme will be stored
+ * 		(0 = QPSK, 1 = OQPSK)
+ * @param rate
+ * 		Where the read value for the rate will be stored
+ * 		(0 = Full rate, 1 = Half rate)
+ * @return ret_state
+ *              Success of the function defined in sTransmitter.h
+ */
 ret_state get_S_encoder(uint8_t * scrambler, uint8_t * filter, uint8_t * mod, uint8_t * rate)
 {
 	uint8_t rawValue = 0;
@@ -248,7 +391,25 @@ ret_state get_S_encoder(uint8_t * scrambler, uint8_t * filter, uint8_t * mod, ui
 
 }
 
-// Set a new encoder value
+/**
+ * @brief
+ *              Register 0x03: Set the scrambler, filter, modulation, and rate
+ * values
+ * @param new_scrambler
+ *              Write value for the scrambler
+ *              (0 = enabled, 1 = disabled)
+ * @param new_filter
+ *              Write value for the filter
+ *              (0 = enabled, 1 = disabled)
+ * @param new_mod
+ *              Write value for the modulation scheme
+ *              (0 = QPSK, 1 = OQPSK)
+ * @param new_rate
+ *              Write value for the rate
+ *              (0 = Full rate, 1 = Half rate)
+ * @return ret_state
+ *              Success of the function defined in sTransmitter.h
+ */
 ret_state set_S_encoder(uint8_t new_scrambler, uint8_t new_filter, uint8_t new_mod, uint8_t new_rate)
 {
 	if(new_rate > 1 || new_mod > 1 || new_filter > 1 || new_scrambler > 1){
@@ -274,8 +435,16 @@ ret_state set_S_encoder(uint8_t new_scrambler, uint8_t new_filter, uint8_t new_m
 	}
 }
 
-// REGISTER 0x03:
-// Get the Power Amplifier power
+/**
+ * @brief
+ *              Register 0x03: Get the power amplifier power
+ * @attention
+ * 		Stores the actual value (24, 26, 28, 30 dBm) at pointer
+ * @param power
+ *              Where the read value for the power will be stored
+ * @return ret_state
+ *              Success of the function defined in sTransmitter.h
+ */
 ret_state get_S_paPower(uint8_t * power)
 {
 	uint8_t rawValue = 0;
@@ -293,7 +462,17 @@ ret_state get_S_paPower(uint8_t * power)
 		return FUNC_PASS;
 	}
 }
-// Set the Power Amplifier power
+
+/**
+ * @brief
+ *              Register 0x03: Set the power amplifier power
+ * @attention
+ *              Input is the actual power (24, 26, 28, 30 dBm)
+ * @param new_paPower
+ *              Write value of the new PA power
+ * @return ret_state
+ *              Success of the function defined in sTransmitter.h
+ */
 ret_state set_S_paPower(uint8_t new_paPower)
 {
 	uint8_t rawValue = 0;
@@ -313,9 +492,16 @@ ret_state set_S_paPower(uint8_t new_paPower)
 	}
 }
 
-
-// Register 0x04:
-// Get the frequency
+/**
+ * @brief
+ *              Register 0x04: Get the frequency
+ * @attention
+ *              Stores the actual frequency (MHz) at pointer
+ * @param freq
+ *       	Where the read value for the frequency will be stored
+ * @return ret_state
+ *              Success of the function defined in sTransmitter.h
+ */
 ret_state get_S_frequency(float * freq)
 {
 	uint8_t offset = 0;
@@ -327,7 +513,16 @@ ret_state get_S_frequency(float * freq)
 	}
 }
 
-// Set a new frequency
+/**
+ * @brief
+ *              Register 0x04: Set a new frequency
+ * @attention
+ *              Input is the actual frequency (MHz)
+ * @param new_frequency
+ *              Write value for the frequency
+ * @return ret_state
+ *              Success of the function defined in sTransmitter.h
+ */
 ret_state set_S_frequency(float new_frequency)
 {
 	if(new_frequency >= 2200.0f && new_frequency <= 2300.0f){
@@ -343,8 +538,14 @@ ret_state set_S_frequency(float new_frequency)
 	}
 }
 
-// REGISTER 0x05:
-// Reset the FPGA logic
+/**
+ * @brief
+ *              Register 0x05: Reset the FPGA logic
+ * @attention
+ * 		Resets all register to defaults (see options sheet)
+ * @return ret_state
+ *              Success of the function defined in sTransmitter.h
+ */
 ret_state softResetFPGA(void)
 {
 	if(write_reg(0x05, 0x0) != FUNC_PASS){
@@ -354,8 +555,16 @@ ret_state softResetFPGA(void)
 	}
 }
 
-// REGISTER 0x11:
-// Get the firmware version
+/**
+ * @brief
+ *              Register 0x11: Get the firmware version
+ * @attention
+ *              Value of 7.01 means "7.1", value of 7.14 means "7.14"
+ * @param version
+ * 		Where the read value of the firmware version will be stored
+ * @return ret_state
+ *              Success of the function defined in sTransmitter.h
+ */
 ret_state get_S_firmwareVersion(float * version)
 {
 	uint8_t rawValue = 0;
@@ -370,8 +579,18 @@ ret_state get_S_firmwareVersion(float * version)
 	}
 }
 
-// REGISTER 0x12:
-// Get the status of the lock and the PA
+/**
+ * @brief
+ *              Register 0x12: Get the status of the frequency lock and the PA
+ * @param pwrgd
+ *              Where the read value of the PA power status will be stored
+ *		(0 = not good, 1 = good)
+ * @param txl
+ *              Where the read value of the frequency lock will be stored
+ *              (0 = achieved, 1 = not achieved)
+ * @return ret_state
+ *              Success of the function defined in sTransmitter.h
+ */
 ret_state get_S_status(uint8_t * pwrgd, uint8_t * txl)
 {
 	uint8_t rawValue = 0;
@@ -384,8 +603,18 @@ ret_state get_S_status(uint8_t * pwrgd, uint8_t * txl)
 	}
 }
 
-// REGISTER 0x13:
-// Check if Transmit Ready
+/**
+ * @brief
+ *              Register 0x13: Get the status of the frequency lock and the PA
+ * @attention
+ * 		Same as hard line on PC/104 header, but as a pollable register
+ * @param trasmit
+ *              Where the read value of the Transmit Ready indicator will be
+ * stored (0 = more than 2650 bytes in buffer, 1 = less than 2561 bytes in
+ * buffer)
+ * @return ret_state
+ *              Success of the function defined in sTransmitter.h
+ */
 ret_state get_S_TR(int * transmit)
 {
 	uint8_t rawValue = 0;
@@ -397,8 +626,20 @@ ret_state get_S_TR(int * transmit)
 	}
 }
 
-// REGISTERS 0x14 through 0x19: (Buffer Registers)
-// The following function will read the desired buffer quantity
+/**
+ * @brief
+ *              Registers 0x14 through 0x19: Get various buffer paramters
+ * @details
+ *    		One of three buffer quantities can be selected: Count, Underrun,
+ * Overrun
+ * @param quantity
+ *              Select the buffer quantity
+ *              (0 = Count, 1 = Underrun, 2 = Overrun)
+ * @param ptr
+ * 		Where the read quantity will be stored
+ * @return ret_state
+ *              Success of the function defined in sTransmitter.h
+ */
 ret_state get_S_buffer(int quantity, uint16_t * ptr)
 {
 	uint8_t rawValue1 = 0;
@@ -428,58 +669,67 @@ ret_state get_S_buffer(int quantity, uint16_t * ptr)
 	}
 }
 
-// REGISTERS 0x1A through 0x29
-// The following function collects housekeeping data for the s-band transmitter in an array
-ret_state get_S_hk(float * array) // Array should contain 8 floats
-{
-	uint16_t val = 0;
-	int16_t temp = 0;
+/**
+ * @brief
+ *              Registers 0x1A through 0x29: Collect housekeeping data
+ * @details
+ *		Collects RF ouput power, PA, board top, and board bottom
+ *temperature, Battery & PA Current and Voltage
+ * @attention
+ *      	Stored in an sBand_housekeeping structure (see sTransmitter.h)
+ * @param hkStruct
+ *              Pointer to structure
+ * @return ret_state
+ *              Success of the function defined in sTransmitter.h
+ */
+ret_state get_S_hk(sBand_housekeeping* hkStruct) {
+  uint16_t val = 0;
+  int16_t temp = 0;
 
-	for(uint8_t address = 0x1A; address < 0x29; address = address + 2){
-		uint8_t val1 = 0, val2 = 0;
+  for (uint8_t address = 0x1A; address < 0x29; address = address + 2) {
+    uint8_t val1 = 0, val2 = 0;
 
-		if(read_reg(address, &val1) != FUNC_PASS){
-			printf("bad read %d\n", address);
-			return BAD_READ;
-		}else if(read_reg(1 + address, &val2) != FUNC_PASS){
-			printf("bad second read %d\n", address);
-			return BAD_READ;
-		}else{
-			val = append_bytes(val1, val2);		
-			switch(address){
-				case 0x1A:
-					val &= 4095;
-					array[0] = ((float)val*(7.0f/6144.0f));
-					break;
-				case 0x1C:
-					val &= 4095;
-					array[1] = (((float)val*3.0f/4096.0f)-0.5f)*100.0f;
-					break;
-				case 0x1E:
-					array[2] = b_Temp(val);
-					break;
-				case 0x20:
-					array[3] = b_Temp(val);
-					break;
-				case 0x22:
-					temp = (int16_t)val;
-			                array[4] = (float)temp*0.00004f; 
-					break;
-				case 0x24:
-					val &= 8191;
-               				array[5] = (float)val*0.004f;
-					break;
-				case 0x26:
-					temp = (int16_t)val;
-			                array[6] = (float)temp*0.00004f;
-					break;
-				case 0x28:
-					val &= 8191;
-			                array[7] = (float)val*0.004f;
-					break;
-			}
-		}
-
-	}
-	return FUNC_PASS;
+    if (read_reg(address, &val1) != FUNC_PASS) {
+      printf("bad read %d\n", address);
+      return BAD_READ;
+    } else if (read_reg(1 + address, &val2) != FUNC_PASS) {
+      printf("bad second read %d\n", address);
+      return BAD_READ;
+    } else {
+      val = append_bytes(val1, val2);
+      switch (address) {
+        case 0x1A:
+          val &= 4095;
+          hkStruct->outputPower = ((float)val * (7.0f / 6144.0f));
+          break;
+        case 0x1C:
+          val &= 4095;
+          hkStruct->paTemp = (((float)val * 3.0f / 4096.0f) - 0.5f) * 100.0f;
+          break;
+        case 0x1E:
+          hkStruct->topTemp = b_Temp(val);
+          break;
+        case 0x20:
+          hkStruct->bottomTemp = b_Temp(val);
+          break;
+        case 0x22:
+          temp = (int16_t)val;
+          hkStruct->batCurrent = (float)temp * 0.00004f;
+          break;
+        case 0x24:
+          val &= 8191;
+          hkStruct->batVoltage = (float)val * 0.004f;
+          break;
+        case 0x26:
+          temp = (int16_t)val;
+          hkStruct->paCurrent = (float)temp * 0.00004f;
+          break;
+        case 0x28:
+          val &= 8191;
+          hkStruct->paVoltage = (float)val * 0.004f;
+          break;
+      }
+    }
+  }
+  return FUNC_PASS;
 }

@@ -23,7 +23,7 @@
 #include "mock_spi.h" //*
 #include <stdint.h>
 #include <unistd.h> //*
-	
+
 //* Simulated registers so that we can "store" values
 static uint8_t reg0 = 0, reg1 = 0, reg3 = 0, reg4 = 0, reg5 = 1;
 static uint8_t reg17 = 30, reg18 = 3, reg19 = 1, reg20 = 0;
@@ -43,18 +43,18 @@ static uint8_t reg37 = 16, reg38 = 192, reg39 = 64, reg40 = 0, reg41 = 9;
  *		Will not exist eventually
  * @param n_bytes
  * 		The number of bytes to add to the buffer
- * @return ret_state
+ * @return STX_return
  * 		Success of the function defined in sTransmitter.h
  */
-ret_state add_vBuffer(int n_bytes)// Replace with spi_writeData eventually
+STX_return add_vBuffer(int n_bytes)// Replace with spi_writeData eventually
 {
 	spi_writeData_Expect();
 	spi_writeData();
 
-	for(int j = 0; j < n_bytes; j++){ 
-		
+	for(int j = 0; j < n_bytes; j++){
+
 		// Time Delay
-		sleep(S_DATA_TIME);
+		// sleep(S_DATA_TIME);
 
 		// Overrun?
 		if(reg25 == 0 && reg24 == 80){
@@ -68,17 +68,15 @@ ret_state add_vBuffer(int n_bytes)// Replace with spi_writeData eventually
 			continue;
 		}
 
-		
+
 		if(reg25 == 255){
 			reg24++;
 			reg25 = 0;
 		}else{
 			reg25++;
 			uint16_t b_count = 0;
-			get_S_buffer(0, &b_count);			
-			if(b_count > 2560){
-				reg19 = 0;
-			}
+			STX_getBuffer(S_BUFFER_COUNT, &b_count); // TR register update
+			if(b_count > 2560){reg19 = 0;}
 		}
 	}
 	return FUNC_PASS;
@@ -94,15 +92,15 @@ ret_state add_vBuffer(int n_bytes)// Replace with spi_writeData eventually
  * data is removed through transmission
  * @param n_bytes
  *              The number of bytes to remove from the buffer
- * @return ret_state
+ * @return STX_return
  *              Success of the function defined in sTransmitter.h
  */
-ret_state transmit_vBuffer(int n_bytes) // No such function will actually need to be called
-{	
+STX_return transmit_vBuffer(int n_bytes) // No such function will actually need to be called
+{
 	for(int k = 0; k < n_bytes; k++){
-		
+
 		// Time Delay
-		sleep(S_DATA_TIME);
+		// sleep(S_DATA_TIME);
 		// Underrun?
 		if(reg25 == 0 && reg24 == 0){
 			if(reg21 == 255){
@@ -114,18 +112,16 @@ ret_state transmit_vBuffer(int n_bytes) // No such function will actually need t
 			reg19 = 1;
 			continue;
 		}
-		
+
 		if(reg25 == 0){
 			reg25 = 255;
-			reg24--;	
+			reg24--;
 		}else{
 			reg25--;
-			
+
 			uint16_t b_count = 0;
-			get_S_buffer(0, &b_count);
-			if(b_count <= 2560){
-				reg19 = 1;
-			}
+			STX_getBuffer(S_BUFFER_COUNT, &b_count);
+			if(b_count <= 2560){reg19 = 1;} // TR register update
 		}
 	}
 	return FUNC_PASS;
@@ -157,10 +153,10 @@ void empty_vBuffer(void)
  *              Register address as defined in the HSTXC User Manual
  * @param ptr
  * 		Pointer to where the register's value should be stored
- * @return ret_state
+ * @return STX_return
  *              Success of the function defined in sTransmitter.h
  */
-ret_state read_reg(uint8_t address, uint8_t * ptr)
+STX_return read_reg(uint8_t address, uint8_t * ptr)
 {
 	uint8_t exp = 0x0; //*
 	switch (address){
@@ -196,7 +192,7 @@ ret_state read_reg(uint8_t address, uint8_t * ptr)
         case 41: exp = reg41; break;//*
 	default: return BAD_PARAM;//*
 	}
-
+	if(address != 0x18 && address != 0x19) printf("From register %d, read value %d\n", address, exp);//*
 	i2c_readRegister_ExpectAndReturn(address, exp);//*
 	*ptr = i2c_readRegister(address);
 	resetTest(); //* Clears ExpectAndReturn memory
@@ -214,10 +210,10 @@ ret_state read_reg(uint8_t address, uint8_t * ptr)
  *              Register address as defined in the HSTXC User Manual
  * @param ptr
  *              Pointer to the write value
- * @return ret_state
+ * @return STX_return
  *              Success of the function defined in sTransmitter.h
  */
-ret_state write_reg(uint8_t address, uint8_t val)
+STX_return write_reg(uint8_t address, uint8_t val)
 {
 	i2c_writeRegister_Expect(address, val); //*
 	i2c_writeRegister(address, val);
@@ -255,6 +251,7 @@ ret_state write_reg(uint8_t address, uint8_t val)
 	case 41: reg41 = val; break;//*
 	default: return BAD_PARAM; //*
 	}
+	printf("To register %d, write value %d\n", address, val);//*
 	return FUNC_PASS;
 }
 
@@ -291,7 +288,7 @@ uint16_t append_bytes(uint8_t b1, uint8_t b2)
  * @return float
  *              Returns temperature in degrees Celsius
  */
-float b_Temp(uint16_t b)
+float calculateTemp(uint16_t b)
 {
 	float temperature = 0;
 	b = b >> 4;
@@ -313,14 +310,14 @@ float b_Temp(uint16_t b)
  *              Where the read value for the mode will be stored
  *              (0 = Configuration, 1 = Synchronization, 2 = Data, 3 = Test
  * data)
- * @return ret_state
+ * @return STX_return
  *              Success of the function defined in sTransmitter.h
  */
-ret_state get_S_control(uint8_t * pa, uint8_t * mode)
+STX_return STX_getControl(uint8_t * pa, uint8_t * mode)
 {
 	uint8_t rawValue = 0;
 	if(read_reg(0x0, &rawValue) != FUNC_PASS){
-		return BAD_READ;	
+		return BAD_READ;
 	}else{
 		*pa = rawValue >> 7;
 		*mode = rawValue & 3;
@@ -338,16 +335,16 @@ ret_state get_S_control(uint8_t * pa, uint8_t * mode)
  *              Mode write value
  *              (0 = Configuration, 1 = Synchronization, 2 = Data, 3 = Test
  * data)
- * @return ret_state
+ * @return STX_return
  *              Success of the function defined in sTransmitter.h
  */
-ret_state set_S_control(uint8_t new_pa, uint8_t new_mode)
+STX_return STX_setControl(uint8_t new_pa, uint8_t new_mode)
 {
-	
+
 	if(new_mode > 3 || new_pa > 1){
 		return BAD_PARAM;
 	}
-	
+
 	new_mode |= (new_pa << 7);
 
 	if(write_reg(0x0, new_mode) != FUNC_PASS){
@@ -373,10 +370,10 @@ ret_state set_S_control(uint8_t new_pa, uint8_t new_mode)
  * @param rate
  * 		Where the read value for the rate will be stored
  * 		(0 = Full rate, 1 = Half rate)
- * @return ret_state
+ * @return STX_return
  *              Success of the function defined in sTransmitter.h
  */
-ret_state get_S_encoder(uint8_t * scrambler, uint8_t * filter, uint8_t * mod, uint8_t * rate)
+STX_return STX_getEncoder(uint8_t * scrambler, uint8_t * filter, uint8_t * mod, uint8_t * rate)
 {
 	uint8_t rawValue = 0;
        	if(read_reg(0x01, &rawValue) != FUNC_PASS){
@@ -407,19 +404,19 @@ ret_state get_S_encoder(uint8_t * scrambler, uint8_t * filter, uint8_t * mod, ui
  * @param new_rate
  *              Write value for the rate
  *              (0 = Full rate, 1 = Half rate)
- * @return ret_state
+ * @return STX_return
  *              Success of the function defined in sTransmitter.h
  */
-ret_state set_S_encoder(uint8_t new_scrambler, uint8_t new_filter, uint8_t new_mod, uint8_t new_rate)
+STX_return STX_setEncoder(uint8_t new_scrambler, uint8_t new_filter, uint8_t new_mod, uint8_t new_rate)
 {
 	if(new_rate > 1 || new_mod > 1 || new_filter > 1 || new_scrambler > 1){
 		return BAD_PARAM;
 	}
-	
+
 	new_rate = (new_rate) | (new_mod << 2) | (new_filter << 3) | (new_scrambler << 4);
 
 	uint8_t mode = 0, pa = 0;
-	if(get_S_control(&pa, &mode) == FUNC_PASS){
+	if(STX_getControl(&pa, &mode) == FUNC_PASS){
 		if(mode == 0){
 			if(write_reg(0x01, new_rate)){
 				return BAD_WRITE;
@@ -429,7 +426,7 @@ ret_state set_S_encoder(uint8_t new_scrambler, uint8_t new_filter, uint8_t new_m
 		}else{
 			return BAD_PARAM;
 		}
-	
+
 	}else{
 		return BAD_READ;
 	}
@@ -442,13 +439,13 @@ ret_state set_S_encoder(uint8_t new_scrambler, uint8_t new_filter, uint8_t new_m
  * 		Stores the actual value (24, 26, 28, 30 dBm) at pointer
  * @param power
  *              Where the read value for the power will be stored
- * @return ret_state
+ * @return STX_return
  *              Success of the function defined in sTransmitter.h
  */
-ret_state get_S_paPower(uint8_t * power)
+STX_return STX_getPaPower(uint8_t * power)
 {
 	uint8_t rawValue = 0;
-       	
+
 	if(read_reg(0x03, &rawValue) != FUNC_PASS){
 		return BAD_READ;
 	}else{
@@ -470,10 +467,10 @@ ret_state get_S_paPower(uint8_t * power)
  *              Input is the actual power (24, 26, 28, 30 dBm)
  * @param new_paPower
  *              Write value of the new PA power
- * @return ret_state
+ * @return STX_return
  *              Success of the function defined in sTransmitter.h
  */
-ret_state set_S_paPower(uint8_t new_paPower)
+STX_return STX_setPaPower(uint8_t new_paPower)
 {
 	uint8_t rawValue = 0;
 
@@ -499,10 +496,10 @@ ret_state set_S_paPower(uint8_t new_paPower)
  *              Stores the actual frequency (MHz) at pointer
  * @param freq
  *       	Where the read value for the frequency will be stored
- * @return ret_state
+ * @return STX_return
  *              Success of the function defined in sTransmitter.h
  */
-ret_state get_S_frequency(float * freq)
+STX_return STX_getFrequency(float * freq)
 {
 	uint8_t offset = 0;
 	if(read_reg(0x04, &offset) != FUNC_PASS){
@@ -520,14 +517,14 @@ ret_state get_S_frequency(float * freq)
  *              Input is the actual frequency (MHz)
  * @param new_frequency
  *              Write value for the frequency
- * @return ret_state
+ * @return STX_return
  *              Success of the function defined in sTransmitter.h
  */
-ret_state set_S_frequency(float new_frequency)
+STX_return STX_setFrequency(float new_frequency)
 {
 	if(new_frequency >= 2200.0f && new_frequency <= 2300.0f){
 		uint8_t offset = (uint8_t)((new_frequency - 2200.0f)*2);
-		
+
 		if(write_reg(0x04, offset) != FUNC_PASS){
 			return BAD_WRITE;
 		}else{
@@ -543,10 +540,10 @@ ret_state set_S_frequency(float new_frequency)
  *              Register 0x05: Reset the FPGA logic
  * @attention
  * 		Resets all register to defaults (see options sheet)
- * @return ret_state
+ * @return STX_return
  *              Success of the function defined in sTransmitter.h
  */
-ret_state softResetFPGA(void)
+STX_return STX_softResetFPGA(void)
 {
 	if(write_reg(0x05, 0x0) != FUNC_PASS){
 		return BAD_WRITE;
@@ -562,10 +559,10 @@ ret_state softResetFPGA(void)
  *              Value of 7.01 means "7.1", value of 7.14 means "7.14"
  * @param version
  * 		Where the read value of the firmware version will be stored
- * @return ret_state
+ * @return STX_return
  *              Success of the function defined in sTransmitter.h
  */
-ret_state get_S_firmwareVersion(float * version)
+STX_return STX_getFirmwareV(float * version)
 {
 	uint8_t rawValue = 0;
 	if(read_reg(0x11, &rawValue) != FUNC_PASS){
@@ -588,10 +585,10 @@ ret_state get_S_firmwareVersion(float * version)
  * @param txl
  *              Where the read value of the frequency lock will be stored
  *              (0 = achieved, 1 = not achieved)
- * @return ret_state
+ * @return STX_return
  *              Success of the function defined in sTransmitter.h
  */
-ret_state get_S_status(uint8_t * pwrgd, uint8_t * txl)
+STX_return STX_getStatus(uint8_t * pwrgd, uint8_t * txl)
 {
 	uint8_t rawValue = 0;
 	if(read_reg(0x12, &rawValue) != FUNC_PASS){
@@ -612,10 +609,10 @@ ret_state get_S_status(uint8_t * pwrgd, uint8_t * txl)
  *              Where the read value of the Transmit Ready indicator will be
  * stored (0 = more than 2650 bytes in buffer, 1 = less than 2561 bytes in
  * buffer)
- * @return ret_state
+ * @return STX_return
  *              Success of the function defined in sTransmitter.h
  */
-ret_state get_S_TR(int * transmit)
+STX_return STX_getTR(int * transmit)
 {
 	uint8_t rawValue = 0;
        	if(read_reg(0x13, &rawValue) != FUNC_PASS){
@@ -637,10 +634,10 @@ ret_state get_S_TR(int * transmit)
  *              (0 = Count, 1 = Underrun, 2 = Overrun)
  * @param ptr
  * 		Where the read quantity will be stored
- * @return ret_state
+ * @return STX_return
  *              Success of the function defined in sTransmitter.h
  */
-ret_state get_S_buffer(int quantity, uint16_t * ptr)
+STX_return STX_getBuffer(uint8_t quantity, uint16_t * ptr)
 {
 	uint8_t rawValue1 = 0;
 	uint8_t rawValue2 = 0;
@@ -679,10 +676,10 @@ ret_state get_S_buffer(int quantity, uint16_t * ptr)
  *      	Stored in an sBand_housekeeping structure (see sTransmitter.h)
  * @param hkStruct
  *              Pointer to structure
- * @return ret_state
+ * @return STX_return
  *              Success of the function defined in sTransmitter.h
  */
-ret_state get_S_hk(sBand_housekeeping* hkStruct) {
+STX_return STX_getHK(sBand_housekeeping* hkStruct) {
   uint16_t val = 0;
   int16_t temp = 0;
 
@@ -690,10 +687,8 @@ ret_state get_S_hk(sBand_housekeeping* hkStruct) {
     uint8_t val1 = 0, val2 = 0;
 
     if (read_reg(address, &val1) != FUNC_PASS) {
-      printf("bad read %d\n", address);
       return BAD_READ;
     } else if (read_reg(1 + address, &val2) != FUNC_PASS) {
-      printf("bad second read %d\n", address);
       return BAD_READ;
     } else {
       val = append_bytes(val1, val2);
@@ -707,10 +702,10 @@ ret_state get_S_hk(sBand_housekeeping* hkStruct) {
           hkStruct->paTemp = (((float)val * 3.0f / 4096.0f) - 0.5f) * 100.0f;
           break;
         case 0x1E:
-          hkStruct->topTemp = b_Temp(val);
+          hkStruct->topTemp = calculateTemp(val);
           break;
         case 0x20:
-          hkStruct->bottomTemp = b_Temp(val);
+          hkStruct->bottomTemp = calculateTemp(val);
           break;
         case 0x22:
           temp = (int16_t)val;

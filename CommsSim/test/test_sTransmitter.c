@@ -24,47 +24,39 @@
 #include "mock_spi.h"
 #include <stdint.h>
 
-void setUp(void)
-{
-}
-
-void tearDown(void)
-{
-}
-
 void test_setControl_getControl(void)
 {
-	set_S_control(1,2);
-	
-	uint8_t pa = 0, mode = 0;
-	get_S_control(&pa, &mode);
+	STX_setControl(S_PA_ENABLE, S_DATA_MODE);
 
-	TEST_ASSERT_EQUAL_UINT8(2, mode);
-	TEST_ASSERT_EQUAL_UINT8(1, pa);
+	uint8_t pa = 0, mode = 0;
+	STX_getControl(&pa, &mode);
+
+	TEST_ASSERT_EQUAL_UINT8(S_DATA_MODE, mode);
+	TEST_ASSERT_EQUAL_UINT8(S_PA_ENABLE, pa);
 	resetTest();
 }
 
 void test_setEncoder_getEncoder(void)
 {
-	set_S_control(0,0); // Must be in Configuration Mode
-	set_S_encoder(1,0,1,0);
-	
-	uint8_t scrambler = 0, filter = 0, mod = 0, rate = 0;
-       	get_S_encoder(&scrambler, &filter, &mod, &rate);
+	STX_setControl(S_PA_DISABLE, S_CONF_MODE); // Must be in Configuration Mode
+	STX_setEncoder(S_SCRAMBLER_ENABLE, S_FILTER_DISABLE, S_MOD_OQPSK, S_RATE_FULL);
 
-	TEST_ASSERT_EQUAL_UINT8(1, scrambler);
-	TEST_ASSERT_EQUAL_UINT8(0, filter);
-	TEST_ASSERT_EQUAL_UINT8(1, mod);
-	TEST_ASSERT_EQUAL_UINT8(0, rate);
+	uint8_t scrambler = 0, filter = 0, mod = 0, rate = 0;
+       	STX_getEncoder(&scrambler, &filter, &mod, &rate);
+
+	TEST_ASSERT_EQUAL_UINT8(S_SCRAMBLER_ENABLE, scrambler);
+	TEST_ASSERT_EQUAL_UINT8(S_FILTER_DISABLE, filter);
+	TEST_ASSERT_EQUAL_UINT8(S_MOD_OQPSK, mod);
+	TEST_ASSERT_EQUAL_UINT8(S_RATE_FULL, rate);
 }
 
 void test_setPAPower26_getPAPower26(void)
 {
 	uint8_t new_paPower = 26;
-	set_S_paPower(new_paPower);
+	STX_setPaPower(new_paPower);
 
 	uint8_t power = 0;
-	get_S_paPower(&power);
+	STX_getPaPower(&power);
 
 	TEST_ASSERT_EQUAL_UINT8(new_paPower, power);
 }
@@ -72,17 +64,17 @@ void test_setPAPower26_getPAPower26(void)
 void test_setFrequency_getFrequency(void)
 {
 	float new_frequency = 2225.5f;
-	set_S_frequency(new_frequency);
+	STX_setFrequency(new_frequency);
 
 	float frequency = 0;
-	get_S_frequency(&frequency);
+	STX_getFrequency(&frequency);
 
 	TEST_ASSERT_FLOAT_WITHIN(0.1, new_frequency, frequency);
 }
 
 void test_resetFPGA(void)
 {
-	softResetFPGA();
+	STX_softResetFPGA();
 	uint8_t reg = 1;
 	read_reg(0x05, &reg);
 
@@ -92,7 +84,7 @@ void test_resetFPGA(void)
 void test_getFirmwareVersion(void)
 {
 	float version = 0;
-	get_S_firmwareVersion(&version);
+	STX_getFirmwareV(&version);
 
 	TEST_ASSERT_EQUAL_FLOAT(1.14, version);
 }
@@ -101,10 +93,10 @@ void test_getStatus(void)
 {
 	uint8_t pwrgd = 0, txl = 0;
 
-	get_S_status(&pwrgd, &txl);
+	STX_getStatus(&pwrgd, &txl);
 
-	TEST_ASSERT_EQUAL_UINT8(1, pwrgd);
-	TEST_ASSERT_EQUAL_UINT8(1, txl);
+	TEST_ASSERT_EQUAL_UINT8(S_PAPWR_GOOD, pwrgd);
+	TEST_ASSERT_EQUAL_UINT8(S_FREQ_LOCK, txl);
 }
 
 void test_putAmountBytesInBuffer(void)
@@ -112,16 +104,16 @@ void test_putAmountBytesInBuffer(void)
 	int amount = 10000;
 	add_vBuffer(amount);
 	uint16_t count = 0;
-	get_S_buffer(0, &count);
+	STX_getBuffer(S_BUFFER_COUNT, &count);
 	TEST_ASSERT_EQUAL_UINT16(amount, count);
 }
 void test_sendAmountBytesInBuffer(void)
 {
 	int amount = 10000;
-	set_S_control(1,2);
+	STX_setControl(S_PA_ENABLE, S_DATA_MODE);
 	transmit_vBuffer(amount);
 	uint16_t count = 0;
-	get_S_buffer(0, &count);
+	STX_getBuffer(S_BUFFER_COUNT, &count);
 	TEST_ASSERT_EQUAL_UINT16(0, count);
 }
 
@@ -132,11 +124,11 @@ void test_get_TR(void)
         int transmit = 0;
 
         add_vBuffer(1);
-        get_S_TR(&transmit);
+        STX_getTR(&transmit);
         TEST_ASSERT_EQUAL_INT(1, transmit);
 
         add_vBuffer(2560);
-        get_S_TR(&transmit);
+        STX_getTR(&transmit);
         TEST_ASSERT_EQUAL_INT(0,transmit);
 
         empty_vBuffer();
@@ -148,7 +140,7 @@ void test_bufferOverrun(void)
 	int amount = 20481;
 	add_vBuffer(amount);
 	uint16_t overrun = 0;
-	get_S_buffer(2, &overrun);
+	STX_getBuffer(S_BUFFER_OVERRUN, &overrun);
 
 	TEST_ASSERT_EQUAL_UINT16(1, overrun);
 }
@@ -158,7 +150,7 @@ void test_bufferUnderrun()
 	int amount = 1;
 	transmit_vBuffer(amount);
 	uint16_t underrun = 0;
-	get_S_buffer(1, &underrun);
+	STX_getBuffer(S_BUFFER_UNDERRUN, &underrun);
 
 	TEST_ASSERT_EQUAL_UINT16(1, underrun);
 }
@@ -166,7 +158,7 @@ void test_bufferUnderrun()
 void test_housekeeping()
 {
   sBand_housekeeping hkStruct;
-  if (get_S_hk(&hkStruct) == FUNC_PASS) {
+  if (STX_getHK(&hkStruct) == FUNC_PASS) {
     TEST_ASSERT_FLOAT_WITHIN(0.05, 2.34, hkStruct.outputPower);
     TEST_ASSERT_FLOAT_WITHIN(0.05, 100.6, hkStruct.paTemp);
     TEST_ASSERT_FLOAT_WITHIN(0.05, 50, hkStruct.topTemp);

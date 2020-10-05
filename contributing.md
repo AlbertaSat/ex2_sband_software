@@ -1,4 +1,4 @@
-CONTRIBUTION GUIDLINES
+CONTRIBUTION GUIDELINES
 *** Preamble ***
 
 All authored content must contain appropriate preamble including copyright and licence information as shown here:
@@ -32,7 +32,7 @@ Function must be catalogued in their heading according to the following format:
 ```
 /**
  * @brief
- * 		<breif (one line) description of the function>
+ * 		<brief (one line) description of the function>
  * @details
  * 		<more detailed description of the function>
  * @attention

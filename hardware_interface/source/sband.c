@@ -21,9 +21,9 @@
  * When TRX connected, the stubbed blocks can be used for TRX = off situation.
  */
 #include <FreeRTOS.h>
+#include <os_queue.h>
 
-#include "comms_hal.h"
-#include "queue.h"
+#include "sband.h"
 #include "services.h"
 
 // For storing the set data

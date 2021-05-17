@@ -70,7 +70,7 @@ typedef enum{
 	BAD_PARAM  = 2,
 }STX_return;
 
-typedef struct {
+typedef struct __attribute__((packed)) {
   float outputPower;
   float paTemp;
   float topTemp;

@@ -24,7 +24,7 @@
 #include <os_queue.h>
 
 #include "sband.h"
-#include "services.h"
+//#include "services.h"
 
 // For storing the set data
 static Sband_config S_config_reg;

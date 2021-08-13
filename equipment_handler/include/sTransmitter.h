@@ -22,7 +22,16 @@
 #define STRANSMITTER_H
 
 #include <stdint.h>
-#define S_DATA_TIME 0.000002
+#include "i2c.h"
+
+// S-band i2c address
+#define SBAND_I2C_ADD 0x26
+
+// Max Lenghts for S-band commands and responses
+#define MAX_SBAND_W_CMDLEN 2
+#define MAX_SBAND_W_ANSLEN 1
+#define MAX_SBAND_R_CMDLEN 1
+#define MAX_SBAND_R_ANSLEN 1
 
 // Transmitter modes
 #define S_CONF_MODE 0
@@ -80,11 +89,6 @@ typedef struct {
   float paCurrent;
   float paVoltage;
 } sBand_housekeeping;
-
-//* Simulated buffer functions
-STX_return add_vBuffer(int);
-STX_return transmit_vBuffer(int);
-void empty_vBuffer(void);
 
 //* Simulated register functions
 STX_return read_reg(uint8_t, uint8_t *);

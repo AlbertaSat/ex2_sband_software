@@ -17,13 +17,7 @@
 
 #include <inttypes.h>
 
-#ifdef SBAND_IS_STUBBED
-typedef enum {
-    IS_STUBBED = 0,
-} STX_return;
-#else
 #include "sTransmitter.h"
-#endif
 
 typedef enum {
     COUNT = 0,
@@ -41,6 +35,7 @@ typedef struct __attribute__((packed)) {
     uint8_t filter;
     uint8_t modulation;
     uint8_t rate;
+    uint8_t bit_order;
 } Sband_Encoder;
 
 typedef struct __attribute__((packed)) {
@@ -56,8 +51,12 @@ typedef struct __attribute__((packed)) {
 } Sband_Status;
 
 typedef struct __attribute__((packed)) {
-    int transmit;
+    uint8_t transmit;
 } Sband_TR;
+
+typedef struct __attribute__((packed)) {
+    uint16_t firmware;
+} Sband_FirmwareV;
 
 typedef struct __attribute__((packed)) {
     float Output_Power;
@@ -77,6 +76,7 @@ typedef struct __attribute__((packed)) {
 typedef struct __attribute__((packed)) {
     Sband_Status status;
     Sband_TR transmit;
+    Sband_FirmwareV firmware;
     Sband_Buffer buffer;
     Sband_Housekeeping HK;
 } Sband_Full_Status;
